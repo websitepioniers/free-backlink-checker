@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Backlink Checker | Real-Time SEO & Mention Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Fira+Code&display=swap');
+        body { background-color: #020617; color: #94a3b8; font-family: 'Outfit', sans-serif; scroll-behavior: smooth; overflow-x: hidden; }
+        
+        .saas-card { 
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(25px); 
+            border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; position: relative; overflow: hidden;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .progress-candy { background: linear-gradient(90deg, #3b82f6, #a855f7, #ec4899, #3b82f6); background-size: 200% 200%; animation: gradientMove 2s linear infinite; }
+        @keyframes gradientMove { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+        
+        .btn-ignite { background: linear-gradient(135deg, #2563eb 0%, #9333ea 100%); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-ignite:hover { transform: scale(1.03) translateY(-3px); box-shadow: 0 20px 40px -10px rgba(147, 51, 234, 0.6); }
+        
+        .terminal { background: rgba(0,0,0,0.85); font-family: 'Fira Code', monospace; font-size: 11px; color: #38bdf8; border-radius: 16px; border: 1px solid #1e293b; box-shadow: inset 0 0 40px rgba(0,0,0,0.9); }
+        .terminal-line { border-left: 2px solid #3b82f6; padding-left: 10px; margin-bottom: 6px; background: linear-gradient(90deg, rgba(59,130,246,0.05) 0%, transparent 100%); }
+        
+        canvas#networkGraph { width: 100%; height: 100%; border-radius: 24px; cursor: crosshair; display: block; }
+        .glow-text { text-shadow: 0 0 40px rgba(59, 130, 246, 0.9); }
+        .scrollbar-custom::-webkit-scrollbar { width: 6px; }
+        .scrollbar-custom::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+</head>
+<body class="p-4 md:p-8 relative">
+    <div class="fixed top-[-20%] left-1/2 -translate-x-1/2 w-[120%] h-[1000px] bg-blue-900/10 blur-[180px] -z-10 rounded-[100%] pointer-events-none"></div>
+
+    <header class="max-w-7xl mx-auto text-center py-12 relative z-10">
+        <nav class="flex justify-between items-center mb-12 px-6 bg-slate-900/40 backdrop-blur-md py-4 rounded-full border border-white/5">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-br from-blue-600 to-purple-600 p-2.5 rounded-full text-white shadow-[0_0_20px_rgba(59,130,246,0.5)]">
+                    <i class="fas fa-network-wired fa-sm"></i>
+                </div>
+                <span class="text-xl font-black text-white tracking-tighter uppercase">Sumenos <span class="text-blue-500">PRO</span></span>
+            </div>
+            <div>
+                <a href="#recentScansContainer" class="text-slate-400 hover:text-white font-bold text-sm transition-colors"><i class="fas fa-history mr-2"></i>History</a>
+            </div>
+        </nav>
+
+        <h1 class="text-6xl md:text-7xl font-black text-white tracking-tighter mb-6 leading-tight">Free Backlink Checker</h1>
+        <div id="tool" class="max-w-4xl mx-auto saas-card p-4 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] border-blue-500/30 mb-8">
+            <div class="flex flex-col md:flex-row gap-3">
+                <div class="flex-1 relative flex items-center bg-slate-900/50 rounded-2xl border border-slate-700/50 focus-within:border-blue-500/50 transition-colors">
+                    <i class="fas fa-globe absolute left-6 text-blue-500 text-xl"></i>
+                    <input type="text" id="urlInput" placeholder="Enter domain (e.g. website.com)" 
+                           class="w-full bg-transparent border-none pl-16 pr-6 py-5 text-white text-xl font-bold outline-none placeholder:text-slate-600"
+                           onkeydown="if(event.key === 'Enter') ignite()">
+                </div>
+                <button onclick="ignite()" id="btn" class="btn-ignite text-white font-black px-10 py-5 rounded-2xl flex items-center gap-3 uppercase tracking-widest whitespace-nowrap">
+                    <i class="fas fa-search text-yellow-300"></i> Run Scan
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main id="dashboard" class="max-w-[1850px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 mb-20 opacity-0 hidden transition-opacity duration-1000 relative z-20">
+        <div class="lg:col-span-3 space-y-6">
+            <div class="saas-card p-8 border-t-4 border-blue-500 text-center shadow-2xl relative">
+                <div class="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] mb-2">Live Links & Mentions</div>
+                <div id="linksTotal" class="text-7xl font-black text-white leading-none tracking-tighter">0</div>
+            </div>
+            <div class="saas-card p-8 border-t-4 border-emerald-500 text-center shadow-2xl relative">
+                <div class="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] mb-2">Domain Authority (DR)</div>
+                <div id="drVal" class="text-7xl font-black text-white leading-none tracking-tighter">0</div>
+            </div>
+            <div class="saas-card p-6 shadow-2xl">
+                <div class="flex justify-between mb-3 text-[10px] font-black uppercase tracking-widest text-blue-400">
+                    <span id="phaseStatus">Cluster Progress</span><span id="perc">0%</span>
+                </div>
+                <div class="w-full bg-black/60 h-3 rounded-full overflow-hidden p-0.5 border border-slate-800">
+                    <div id="progress" class="progress-candy h-full rounded-full" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between mt-4 text-[9px] font-bold text-slate-500 uppercase">
+                    <span>CPU: <span id="cpu" class="text-white">0%</span></span>
+                    <span id="speed" class="text-blue-400 font-black">0.0 P/S</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-6 saas-card relative h-[600px] shadow-2xl border-white/10 bg-[#040812] overflow-hidden" id="canvasContainer">
+            <div class="absolute top-4 left-4 z-20 flex items-center gap-3 bg-black/60 px-4 py-2 rounded-full border border-white/10">
+                <div class="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+                <span class="text-[9px] font-black text-white uppercase tracking-widest">Live Spiderweb Visualizer</span>
+            </div>
+            <canvas id="networkGraph"></canvas>
+            <div id="targetLabel" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white font-black text-2xl z-10 pointer-events-none glow-text bg-black/50 px-5 py-2 rounded-2xl backdrop-blur-md border border-white/10"></div>
+        </div>
+
+        <div class="lg:col-span-3 saas-card flex flex-col h-[600px] border-white/5 shadow-2xl bg-[#02050a]">
+            <div class="bg-slate-900/90 px-5 py-4 border-b border-slate-800 flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-purple-400">
+                <i class="fas fa-terminal mr-2"></i>Harvester Log
+            </div>
+            <div id="console" class="terminal flex-1 p-5 overflow-y-auto scrollbar-custom leading-relaxed"></div>
+        </div>
+        
+        <div class="col-span-1 lg:col-span-12 mt-4" id="resultsSection">
+            <div class="saas-card rounded-[30px] overflow-hidden shadow-2xl border-white/5">
+                <div class="px-8 py-6 border-b border-slate-800 bg-slate-900/80 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <h3 class="text-xs font-black uppercase tracking-widest text-white"><i class="fas fa-database text-blue-500 mr-2"></i> Live Backlink Stream</h3>
+                    <div class="relative w-full md:w-96">
+                        <i class="fas fa-filter absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+                        <input type="text" id="liveTableSearch" onkeyup="filterLiveTable()" placeholder="Search links, anchors, or categories..." class="w-full bg-black/50 border border-slate-700 text-white text-sm rounded-full pl-10 pr-4 py-2 focus:outline-none focus:border-blue-500 transition-colors">
+                    </div>
+                </div>
+                <div class="overflow-y-auto h-[500px] scrollbar-custom bg-[#050914]">
+                    <table class="w-full text-left border-collapse" id="liveTable">
+                        <thead class="sticky top-0 bg-[#0f172a] text-[10px] font-black uppercase text-slate-400 border-b border-slate-800 z-10">
+                            <tr>
+                                <th class="px-8 py-5">Source URL & Title</th>
+                                <th class="px-6 py-5">Anchor Context</th>
+                                <th class="px-6 py-5 text-center">DR</th>
+                                <th class="px-6 py-5 text-center">Status</th>
+                                <th class="px-6 py-5 text-center">Category</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody" class="divide-y divide-slate-800/60 text-[12px]"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <section class="max-w-7xl mx-auto px-6 py-12 relative z-10 border-t border-slate-800 mt-12">
+        <h3 class="text-2xl font-black text-white mb-8 tracking-tight"><i class="fas fa-folder-open text-blue-500 mr-3"></i> Dedicated Scan Reports</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5" id="recentScansContainer">
+            <div class="text-slate-500 text-sm italic">Loading recent data...</div>
+        </div>
+    </section>
+
+    <script>
+        function filterLiveTable() {
+            const query = document.getElementById('liveTableSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#tbody tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        function loadRecentScans() {
+            fetch('/seo/recent')
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('recentScansContainer');
+                    container.innerHTML = '';
+                    if(data.length === 0) {
+                        container.innerHTML = `<div class="text-slate-500 col-span-full">No scans performed yet.</div>`;
+                        return;
+                    }
+                    data.forEach(scan => {
+                        container.innerHTML += `
+                            <a href="/seo/report/${scan.domain}" target="_blank" class="block saas-card p-6 border-t-2 border-slate-700 hover:border-blue-500 hover:-translate-y-1 transition-all group">
+                                <div class="text-sm font-bold text-slate-300 mb-4 truncate group-hover:text-blue-400 transition-colors" title="${scan.domain}">${scan.domain}</div>
+                                <div class="flex justify-between items-end">
+                                    <div>
+                                        <div class="text-[10px] uppercase text-slate-600 font-bold mb-1">Authority</div>
+                                        <div class="text-2xl font-black text-white">${scan.dr}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-[10px] uppercase text-slate-600 font-bold mb-1">Total Links</div>
+                                        <div class="text-blue-400 font-bold text-lg">${scan.links}</div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 text-[9px] text-slate-600 font-mono text-right">${scan.date}</div>
+                            </a>
+                        `;
+                    });
+                }).catch(err => console.log(err));
+        }
+        document.addEventListener("DOMContentLoaded", loadRecentScans);
+
+        // --- HIGH PERFORMANCE SPIDERWEB VISUALIZER ---
+        const canvas = document.getElementById('networkGraph');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let hubs = {}; let leaves = []; let particles = []; let globalRotation = 0;
+        const categories = ["SEARCH", "SOCIAL", "DEV_EDU", "DIRECTORIES", "OSINT", "ARCHIVE"];
+
+        const resizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                if (entry.contentRect.width > 0) initCanvas();
+            }
+        });
+        resizeObserver.observe(document.getElementById('canvasContainer'));
+
+        function initCanvas() {
+            const container = document.getElementById('canvasContainer');
+            width = container.offsetWidth;
+            height = container.offsetHeight;
+            if(width === 0 || height === 0) return;
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            categories.forEach((cat, i) => {
+                hubs[cat] = {
+                    label: cat,
+                    angle: (i / categories.length) * Math.PI * 2,
+                    dist: Math.min(width, height) * 0.28, 
+                    x: 0, y: 0, color: '#8b5cf6'
+                };
+            });
+        }
+
+        function addParticle(nodeKey, textLabel) {
+            if(!hubs[nodeKey]) nodeKey = categories[Math.floor(Math.random()*categories.length)];
+            particles.push({
+                x: width/2, y: height/2,
+                targetNode: hubs[nodeKey],
+                progress: 0, color: '#3b82f6', text: textLabel
+            });
+        }
+
+        function addSpiderNode(category, domain, isLive) {
+            if(!hubs[category]) category = categories[Math.floor(Math.random()*categories.length)];
+            leaves.push({
+                hub: hubs[category],
+                angleOffset: Math.random() * Math.PI * 2,
+                distOffset: 40 + Math.random() * (Math.min(width, height) * 0.25),
+                pulseSpeed: 0.02 + Math.random() * 0.05,
+                pulseState: Math.random() * Math.PI * 2,
+                label: domain.replace('www.', '').substring(0, 18), // Afgekapte cleane tekst
+                color: isLive ? '#10b981' : '#f43f5e',
+                x: 0, y: 0,
+                creationTime: Date.now()
+            });
+            // Harde limiet om vastlopen van de GPU/CPU te voorkomen
+            if(leaves.length > 120) leaves.shift(); 
+        }
+
+        function drawGraph() {
+            if(width === 0) return requestAnimationFrame(drawGraph);
+            ctx.clearRect(0, 0, width, height);
+            const cx = width / 2;
+            const cy = height / 2;
+            globalRotation += 0.0003; 
+
+            // Achtergrond ringen voor diepte
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(cx, cy, Math.min(width, height) * 0.28, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(cx, cy, Math.min(width, height) * 0.15, 0, Math.PI*2); ctx.stroke();
+
+            // Center Pulse
+            let centerPulse = Math.sin(Date.now() / 400) * 5;
+            ctx.fillStyle = '#3b82f6'; ctx.shadowBlur = 40; ctx.shadowColor = '#3b82f6';
+            ctx.beginPath(); ctx.arc(cx, cy, 18 + centerPulse, 0, Math.PI*2); ctx.fill();
+
+            // Hubs
+            ctx.lineWidth = 1;
+            Object.values(hubs).forEach(h => {
+                h.x = cx + Math.cos(h.angle + globalRotation) * h.dist;
+                h.y = cy + Math.sin(h.angle + globalRotation) * h.dist;
+                
+                ctx.strokeStyle = 'rgba(139, 92, 246, 0.2)';
+                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(h.x, h.y); ctx.stroke();
+                
+                ctx.fillStyle = h.color; ctx.shadowBlur = 15; ctx.shadowColor = h.color;
+                ctx.beginPath(); ctx.arc(h.x, h.y, 7, 0, Math.PI*2); ctx.fill();
+                
+                ctx.font = 'bold 11px monospace'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.shadowBlur = 0;
+                ctx.fillText(h.label, h.x + 12, h.y + 4);
+            });
+
+            // Geoptimaliseerde Leaves rendering
+            for (let i = 0; i < leaves.length; i++) {
+                let leaf = leaves[i];
+                leaf.angleOffset += 0.0008;
+                leaf.pulseState += leaf.pulseSpeed;
+                let currentDist = leaf.distOffset + Math.sin(leaf.pulseState) * 8;
+                
+                leaf.x = leaf.hub.x + Math.cos(leaf.angleOffset) * currentDist;
+                leaf.y = leaf.hub.y + Math.sin(leaf.angleOffset) * currentDist;
+
+                // Lijn naar hub
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+                ctx.beginPath(); ctx.moveTo(leaf.hub.x, leaf.hub.y); ctx.lineTo(leaf.x, leaf.y); ctx.stroke();
+
+                // Geoptimaliseerde Inter-leaf mesh (O(N^2) halvering via kwadratische check)
+                for (let j = i + 1; j < leaves.length; j++) {
+                    let other = leaves[j];
+                    let dx = leaf.x - other.x;
+                    let dy = leaf.y - other.y;
+                    let distSq = dx*dx + dy*dy;
+                    if (distSq < 7000) { // Ongeveer < 83 pixels
+                        let opac = 0.15 - (Math.sqrt(distSq)/83)*0.15;
+                        ctx.strokeStyle = `rgba(59, 130, 246, ${opac})`;
+                        ctx.beginPath(); ctx.moveTo(leaf.x, leaf.y); ctx.lineTo(other.x, other.y); ctx.stroke();
+                    }
+                }
+
+                // Render leaf node
+                ctx.fillStyle = leaf.color; 
+                ctx.shadowBlur = 10; 
+                ctx.shadowColor = leaf.color;
+                if(Date.now() - leaf.creationTime < 800) { ctx.fillStyle = '#fff'; ctx.shadowColor = '#fff'; }
+                ctx.beginPath(); ctx.arc(leaf.x, leaf.y, 4, 0, Math.PI*2); ctx.fill();
+
+                // Persistente tekst (blijft altijd staan)
+                ctx.shadowBlur = 0;
+                ctx.font = '10px monospace';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.fillText(leaf.label, leaf.x + 8, leaf.y + 3);
+            }
+
+            // Particles (datatransfers)
+            for(let i=particles.length-1; i>=0; i--) {
+                let p = particles[i];
+                p.progress += 0.02; 
+                let curX = cx + (p.targetNode.x - cx) * p.progress;
+                let curY = cy + (p.targetNode.y - cy) * p.progress;
+                
+                ctx.shadowBlur = 15; ctx.shadowColor = p.color; ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(curX, curY, 3, 0, Math.PI*2); ctx.fill();
+
+                if(p.text) {
+                    ctx.font = '10px monospace'; ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                    ctx.shadowBlur = 0; ctx.fillText(p.text, curX + 10, curY - 10);
+                }
+                if(p.progress >= 1) particles.splice(i, 1);
+            }
+            requestAnimationFrame(drawGraph);
+        }
+        requestAnimationFrame(drawGraph); 
+
+        // --- SCAN LOGICA ---
+        let counter = 0; let start;
+        
+        function ignite() {
+            const url = document.getElementById('urlInput').value;
+            if(!url) return;
+            
+            leaves = []; particles = [];
+            document.getElementById('targetLabel').innerText = url.toLowerCase();
+            
+            const dashboard = document.getElementById('dashboard');
+            dashboard.classList.remove('hidden');
+            dashboard.style.display = "grid";
+            setTimeout(() => { dashboard.classList.remove('opacity-0'); dashboard.classList.add('opacity-100'); }, 100);
+            dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            document.getElementById('tbody').innerHTML = "";
+            document.getElementById('console').innerHTML = `<div class="text-blue-400 font-bold mb-4">[*] SYSTEM BOOT: TARGETING ${url.toUpperCase()}...</div>`;
+            document.getElementById('linksTotal').innerText = "0";
+            document.getElementById('drVal').innerText = "0";
+            document.getElementById('btn').disabled = true;
+            
+            counter = 0; start = Date.now();
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "/seo/analyze", true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            
+            let buffer = "";
+            let last_index = 0;
+            
+            xhr.onprogress = function() {
+                let new_data = xhr.responseText.substring(last_index);
+                last_index = xhr.responseText.length;
+                buffer += new_data;
+                
+                let lines = buffer.split('\n');
+                buffer = lines.pop(); 
+                
+                lines.forEach(line => {
+                    let msg = line.trim();
+                    if(!msg) return;
+                    if (msg.includes("data: ")) {
+                        msg = msg.replace("data: ", "").trim();
+                        try { msg = JSON.parse(msg).msg; } catch(e) {}
+                    }
+                    if (!msg) return;
+
+                    if (msg.includes("[PERCENT]")) {
+                        let p = msg.split("[PERCENT]")[1].trim();
+                        document.getElementById('progress').style.width = p + "%";
+                        document.getElementById('perc').innerText = p + "%";
+                        if(parseInt(p) >= 50) document.getElementById('phaseStatus').innerText = "Verifying Links";
+                    }
+                    else if (msg.includes("[METRIC_DR]")) {
+                        document.getElementById('drVal').innerText = msg.split("[METRIC_DR]")[1].trim();
+                    }
+                    else if (msg.includes("[LINK_DATA]")) {
+                        processLink(msg.substring(msg.indexOf("{")));
+                    }
+                    else if (msg.includes("[ACTION]")) {
+                        const parts = msg.split(" | ");
+                        if(parts.length >= 3) processAction(parts[1].trim(), parts.slice(2).join(" | ").trim());
+                    }
+                    else processLog(msg);
+                });
+            };
+
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    document.getElementById('btn').disabled = false;
+                    document.getElementById('progress').style.width = "100%";
+                    document.getElementById('perc').innerText = "100%";
+                    document.getElementById('phaseStatus').innerText = "Scan Complete & Saved";
+                    loadRecentScans(); 
+                }
+            };
+            xhr.send("url=" + encodeURIComponent(url));
+        }
+
+        function printToTerminal(htmlString) {
+            const con = document.getElementById('console');
+            const div = document.createElement('div');
+            div.className = "terminal-line";
+            const now = new Date();
+            const timeStr = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}.${now.getMilliseconds()}`;
+            div.innerHTML = `<span class="text-slate-600 mr-2">[${timeStr}]</span> ${htmlString}`;
+            con.appendChild(div);
+            if(con.childNodes.length > 150) con.removeChild(con.firstChild);
+            con.scrollTop = con.scrollHeight;
+        }
+
+        function processAction(node, text) {
+            printToTerminal(`<span class="text-purple-400 font-bold">[${node}]</span> <span class="text-slate-300">${text}</span>`);
+            addParticle(node, text.length > 20 ? text.substring(0, 20) + "..." : text);
+        }
+
+        function processLog(msg) {
+            let formattedMsg = msg.replace(/\[\*\]/g, '<span class="text-blue-400 font-bold">[*]</span>').replace(/\[\+\]/g, '<span class="text-emerald-400 font-bold">[+]</span>');
+            printToTerminal(`<span class="text-slate-400">${formattedMsg}</span>`);
+        }
+
+        function processLink(jsonStr) {
+            try {
+                const link = JSON.parse(jsonStr);
+                counter++;
+                document.getElementById('linksTotal').innerText = counter;
+                let elapsed = (Date.now() - start) / 1000;
+                document.getElementById('speed').innerText = (counter / Math.max(elapsed, 1)).toFixed(1) + " P/S";
+                
+                let isLive = (link.category === "Live Backlink" || link.category === "Text Mention");
+                let sourceDomain = new URL(link.source).hostname;
+
+                addSpiderNode(link.node, sourceDomain, isLive);
+                printToTerminal(`<span class="text-emerald-400 font-bold">[EXTRACT]</span> Found packet from ${sourceDomain}`);
+
+                let catClass = isLive ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" : "text-pink-400 bg-pink-500/10 border-pink-500/20";
+                const drColor = link.link_dr > 70 ? 'text-green-400' : (link.link_dr > 30 ? 'text-yellow-400' : 'text-red-400');
+
+                const row = `<tr class="hover:bg-slate-800/50 transition-all border-b border-slate-800/30">
+                    <td class="px-8 py-5"><div class="text-blue-400 font-bold truncate max-w-sm"><a href="${link.source}" target="_blank">${link.source}</a></div><div class="text-[10px] text-slate-500 mt-1 uppercase truncate max-w-sm">${link.title}</div></td>
+                    <td class="px-6 py-5 text-white italic font-medium">"${link.anchor}"</td>
+                    <td class="px-6 py-5 text-center font-black text-lg ${drColor}">${link.link_dr || '-'}</td>
+                    <td class="px-6 py-5 text-center font-mono text-[11px] text-slate-500">${link.status}</td>
+                    <td class="px-6 py-5 text-center"><span class="px-3 py-1 border rounded-lg text-[9px] font-black uppercase ${catClass}">${link.category}</span></td>
+                </tr>`;
+                document.getElementById('tbody').insertAdjacentHTML('afterbegin', row);
+            } catch(e) {}
+        }
+    </script>
+</body>
+</html>
